@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ Панел - Млад Журналист</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        body { padding-top: 100px; }
+        .admin-section { margin-bottom: 60px; }
+        .admin-section h2 { border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
+        .image-input-group { margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+        
+        /* NEW: User Management Styles */
+        .users-grid { margin-top: 20px; }
+        .users-table { overflow-x: auto; }
+        .users-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        .users-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .users-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .users-table tr:hover {
+            background: #f8f9fa;
+        }
+        .btn-small {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-success { background: #2ecc71; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        
+        .admin-queue-item {
+            background: white;
+            border: 1px solid #eaeaea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .queue-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+        }
+        .role-select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>Млад Журналист - Админ</h1>
+                <p>Управление на съдържанието</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">← Назад към сайта</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Article Publishing Section -->
+        <section class="admin-section">
+            <h2>Публикуване на статии</h2>
+            <form id="articleForm">
+                <div class="form-group">
+                    <input type="text" id="title" placeholder="Заглавие на статията" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="excerpt" placeholder="Кратко описание (ще се покаже на началната страница)" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <textarea id="content" placeholder="Пълен текст на статията..." rows="10" required></textarea>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="author" placeholder="Автор" required>
+                </div>
+                <div class="form-group">
+                    <select id="category" required>
+                        <option value="news">Новини</option>
+                        <option value="interview">Интервю</option>
+                        <option value="opinion">Мнение</option>
+                        <option value="culture">Култура</option>
+                    </select>
+                </div>
+                
+                <!-- FIXED: Multiple image inputs with unique IDs -->
+                <div class="image-input-group">
+                    <h4>Снимки за статията (до 6 снимки)</h4>
+                    
+                    <div class="form-group">
+                        <label for="articleImage1">Основна снимка:</label>
+                        <input type="url" id="articleImage1" placeholder="https://example.com/image1.jpg">
+                        <small>URL на основна снимка</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="articleImage2">Допълнителна снимка 2:</label>
+                        <input type="url" id="articleImage2" placeholder="https://example.com/image2.jpg">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="articleImage3">Допълнителна снимка 3:</label>
+                        <input type="url" id="articleImage3" placeholder="https://example.com/image3.jpg">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="articleImage4">Допълнителна снимка 4:</label>
+                        <input type="url" id="articleImage4" placeholder="https://example.com/image4.jpg">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="articleImage5">Допълнителна снимка 5:</label>
+                        <input type="url" id="articleImage5" placeholder="https://example.com/image5.jpg">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="articleImage6">Допълнителна снимка 6:</label>
+                        <input type="url" id="articleImage6" placeholder="https://example.com/image6.jpg">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">Публикувай статия</button>
+            </form>
+            <div id="articleMessage" class="form-message"></div>
+        </section>
+
+        <!-- Calendar Management Section -->
+        <section class="admin-section" style="padding: 40px 0; background: #f8f9fa; margin-top: 40px; border-radius: 10px;">
+            <div class="container">
+                <h2>Управление на календара</h2>
+                <div class="admin-container">
+                    <!-- Add Event Form -->
+                    <div class="admin-form-section">
+                        <h3>Добави ново събитие</h3>
+                        <form id="eventForm">
+                            <input type="text" id="eventTitle" placeholder="Заглавие на събитието" required>
+                            <textarea id="eventDescription" placeholder="Описание" rows="3"></textarea>
+                            <input type="date" id="eventDate" required>
+                            <input type="time" id="eventTime" required>
+                            <input type="text" id="eventLocation" placeholder="Място" required>
+                            <button type="submit" class="btn">Добави събитие</button>
+                        </form>
+                        <div id="eventMessage" class="form-message"></div>
+                    </div>
+
+                    <!-- Events List -->
+                    <div class="admin-events-section">
+                        <h3>Предстоящи събития</h3>
+                        <div id="adminEventsList" class="events-list">
+                            <!-- Events will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW: User Management Section -->
+        <section class="admin-section" style="margin-top: 40px;">
+            <h2>👥 Управление на потребители</h2>
+            <div id="usersContainer" class="users-grid">
+                Зареждане на потребители...
+            </div>
+        </section>
+
+        <!-- NEW: Articles Waiting for Approval -->
+        <section class="admin-section" style="margin-top: 40px; background: #fff3cd; border: 1px solid #ffeaa7;">
+            <h2>📋 Статии за окончателно одобрение</h2>
+            <div id="adminQueueContainer" class="articles-grid">
+                Зареждане на статии...
+            </div>
+            
+            <!-- Debug Tools - NOW INSIDE THE SECTION -->
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                <h4>🔧 Дебъг инструменти</h4>
+                <button onclick="debugAdminQueue()" style="margin-right: 10px; padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Дебъг опашка
+                </button>
+                <button onclick="fixQueueIssues()" style="margin-right: 10px; padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Поправи опашка
+                </button>
+                <button onclick="loadArticleQueue()" style="padding: 8px 15px; background: #f39c12; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Презареди
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Клуб "Млад Журналист". Всички права запазени.</p>
+        </div>
+    </footer>
+
+    <script>
+        // ========== ADMIN ROLE CHECK ==========
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🔧 Admin page loading, checking permissions...');
+            
+            // Wait for auth to initialize
+            await new Promise(resolve => {
+                if (auth.currentUser) {
+                    resolve();
+                } else {
+                    const unsubscribe = auth.onAuthStateChanged((user) => {
+                        unsubscribe();
+                        resolve();
+                    });
+                }
+            });
+            
+            const user = auth.currentUser;
+            console.log('🔧 Current user:', user?.email);
+            
+            if (!user) {
+                alert('Моля, влезте в системата за достъп до админ панела.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            try {
+                const userRef = db.ref('users/' + user.uid);
+                const snapshot = await userRef.once('value');
+                
+                console.log('🔧 User snapshot exists:', snapshot.exists());
+                
+                if (!snapshot.exists()) {
+                    alert('Потребителският профил не е намерен в базата данни.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                const userData = snapshot.val();
+                const userRole = userData?.role;
+                
+                console.log('🔧 User role from DB:', userRole);
+                
+                if (userRole !== 'admin') {
+                    alert('Нямате администраторски права за достъп до тази страница. Вашата роля: ' + (userRole || 'неопределена'));
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                console.log('✅ Access granted! User is admin.');
+                
+                // Load admin features
+                loadUserManagement();
+                loadArticleQueue();
+                loadEvents();
+                
+            } catch (error) {
+                console.error('❌ Error in admin check:', error);
+                alert('Грешка при проверка на правата: ' + error.message);
+                window.location.href = 'index.html';
+            }
+        });
+
+        // ========== ARTICLE PUBLISHING FORM ==========
+        document.getElementById('articleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Публикуване...';
+            submitBtn.disabled = true;
+            
+            const articleData = {
+                title: document.getElementById('title').value,
+                excerpt: document.getElementById('excerpt').value,
+                content: document.getElementById('content').value,
+                author: document.getElementById('author').value,
+                category: document.getElementById('category').value,
+                date: new Date().toISOString(),
+                imageUrl: document.getElementById('articleImage1').value || '',
+                imageUrl2: document.getElementById('articleImage2').value || '',
+                imageUrl3: document.getElementById('articleImage3').value || '',
+                imageUrl4: document.getElementById('articleImage4').value || '',
+                imageUrl5: document.getElementById('articleImage5').value || '',
+                imageUrl6: document.getElementById('articleImage6').value || ''
+            };
+
+            // Remove empty image fields
+            Object.keys(articleData).forEach(key => {
+                if (key.startsWith('imageUrl') && articleData[key] === '') {
+                    delete articleData[key];
+                }
+            });
+
+            db.ref('articles').push(articleData)
+                .then(() => {
+                    document.getElementById('articleMessage').innerHTML = 
+                        '<div class="success-message">✅ Статията е публикувана успешно!</div>';
+                    document.getElementById('articleForm').reset();
+                })
+                .catch((error) => {
+                    document.getElementById('articleMessage').innerHTML = 
+                        '<div class="error-message">❌ Грешка при публикуване</div>';
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
+
+        // ========== CALENDAR MANAGEMENT ==========
+        document.getElementById('eventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('eventTitle').value;
+            const description = document.getElementById('eventDescription').value;
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const location = document.getElementById('eventLocation').value;
+            
+            if (!title || !date || !time || !location) {
+                alert('Моля, попълнете всички задължителни полета');
+                return;
+            }
+            
+            const dateTimeString = `${date}T${time}`;
+            const timestamp = new Date(dateTimeString).getTime();
+            
+            if (isNaN(timestamp)) {
+                alert('Невалидна дата или час');
+                return;
+            }
+            
+            const eventData = {
+                title: title,
+                description: description,
+                location: location,
+                timestamp: timestamp,
+                created: new Date().getTime()
+            };
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Добавяне...';
+            submitBtn.disabled = true;
+            
+            db.ref('events').push(eventData)
+                .then(() => {
+                    document.getElementById('eventMessage').innerHTML = 
+                        '<div class="success-message">✅ Събитието е добавено успешно!</div>';
+                    document.getElementById('eventForm').reset();
+                    loadEvents();
+                })
+                .catch((error) => {
+                    document.getElementById('eventMessage').innerHTML = 
+                        '<div class="error-message">❌ Грешка при добавяне на събитието</div>';
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
+
+        // Load events function
+        function loadEvents() {
+            db.ref('events').orderByChild('timestamp').once('value')
+                .then((snapshot) => {
+                    const eventsContainer = document.getElementById('adminEventsList');
+                    eventsContainer.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        eventsContainer.innerHTML = '<div class="no-events">Все още няма събития</div>';
+                        return;
+                    }
+                    
+                    const now = new Date().getTime();
+                    let hasEvents = false;
+                    
+                    snapshot.forEach((childSnapshot) => {
+                        const event = childSnapshot.val();
+                        const eventId = childSnapshot.key;
+                        const eventDate = new Date(event.timestamp);
+                        
+                        const isUpcoming = eventDate.getTime() > new Date().getTime();
+                        const eventDiv = document.createElement('div');
+                        eventDiv.className = `admin-event-card ${isUpcoming ? 'upcoming' : 'past'}`;
+                        
+                        const dateString = eventDate.toLocaleDateString('bg-BG', { 
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        eventDiv.innerHTML = `
+                            <button class="delete-event-btn" onclick="deleteEvent('${eventId}')">✕</button>
+                            <div class="admin-event-date">
+                                <strong>${dateString}</strong>
+                            </div>
+                            <h3 class="admin-event-title">${event.title}</h3>
+                            ${event.description ? `<p class="admin-event-description">${event.description}</p>` : ''}
+                            <p class="admin-event-location">📍 ${event.location}</p>
+                        `;
+                        
+                        eventsContainer.appendChild(eventDiv);
+                        hasEvents = true;
+                    });
+                    
+                    if (!hasEvents) {
+                        eventsContainer.innerHTML = '<div class="no-events">Все още няма събития</div>';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error loading events:', error);
+                    document.getElementById('adminEventsList').innerHTML = 
+                        '<div class="no-events">Грешка при зареждане на събитията</div>';
+                });
+        }
+
+        function deleteEvent(eventId) {
+            if (confirm('Сигурни ли сте, че искате да изтриете това събитие?')) {
+                db.ref('events/' + eventId).remove()
+                    .then(() => {
+                        document.getElementById('eventMessage').innerHTML = 
+                            '<div class="success-message">✅ Събитието е изтрито успешно!</div>';
+                        loadEvents();
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting event:', error);
+                        document.getElementById('eventMessage').innerHTML = 
+                            '<div class="error-message">❌ Грешка при изтриване на събитието</div>';
+                    });
+            }
+        }
+
+        // ========== USER MANAGEMENT FUNCTIONS ==========
+        async function loadUserManagement() {
+            try {
+                const snapshot = await db.ref('users').once('value');
+                const usersContainer = document.getElementById('usersContainer');
+                
+                if (!snapshot.exists()) {
+                    usersContainer.innerHTML = '<p>Няма регистрирани потребители.</p>';
+                    return;
+                }
+                
+                let html = '<div class="users-table">';
+                html += `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Име</th>
+                                <th>Имейл</th>
+                                <th>Роля</th>
+                                <th>Статии</th>
+                                <th>Регистриран</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                snapshot.forEach(childSnapshot => {
+                    const user = childSnapshot.val();
+                    const userId = childSnapshot.key;
+                    
+                    if (userId === auth.currentUser.uid) return;
+                    
+                    const registerDate = user.createdAt ? 
+                        new Date(user.createdAt).toLocaleDateString('bg-BG') : 'Неизвестно';
+                    
+                    html += `
+                        <tr>
+                            <td>${user.displayName || 'Няма име'}</td>
+                            <td>${user.email || 'Няма имейл'}</td>
+                            <td>
+                                <select class="role-select" data-user-id="${userId}" onchange="updateUserRole('${userId}', this.value)">
+                                    <option value="user" ${user.role === 'user' ? 'selected' : ''}>Потребител</option>
+                                    <option value="redactor" ${user.role === 'redactor' ? 'selected' : ''}>Редактор</option>
+                                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Админ</option>
+                                </select>
+                            </td>
+                            <td>
+                                <span title="Изпратени">📤 ${user.articlesSubmitted || 0}</span> |
+                                <span title="Публикувани">📰 ${user.articlesPublished || 0}</span>
+                            </td>
+                            <td>${registerDate}</td>
+                            <td>
+                                <button onclick="deleteUser('${userId}')" class="btn-small btn-danger">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                </div>`;
+                
+                usersContainer.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersContainer').innerHTML = '<p>Грешка при зареждане на потребителите.</p>';
+            }
+        }
+
+        // ========== ARTICLE QUEUE FUNCTIONS - SINGLE VERSION ==========
+        async function loadArticleQueue() {
+            try {
+                console.log('🔄 Loading admin queue...');
+                const articlesContainer = document.getElementById('adminQueueContainer');
+                
+                // Try admin queue first
+                const queueSnapshot = await firebase.database().ref('queues/adminQueue').once('value');
+                
+                if (queueSnapshot.exists()) {
+                    console.log('📋 Found in admin queue:', Object.keys(queueSnapshot.val()));
+                    
+                    let html = '';
+                    let loadedCount = 0;
+                    
+                    // Load each article
+                    for (const articleId in queueSnapshot.val()) {
+                        const articleSnapshot = await firebase.database().ref(`articles/${articleId}`).once('value');
+                        
+                        if (articleSnapshot.exists()) {
+                            const article = articleSnapshot.val();
+                            
+                            if (article.status === 'approved') {
+                                loadedCount++;
+                                const queueData = queueSnapshot.val()[articleId];
+                                
+                                html += `
+                                    <div class="admin-queue-item" id="queue-item-${articleId}">
+                                        <h3>${article.title || 'Без заглавие'}</h3>
+                                        <p><strong>Автор:</strong> ${article.author || 'Неизвестен'}</p>
+                                        <p><strong>Редактор:</strong> ${queueData.redactorName || article.redactorId || 'Неизвестен'}</p>
+                                        <p><strong>Дата:</strong> ${new Date(article.approvedAt || article.date).toLocaleDateString('bg-BG')}</p>
+                                        ${article.redactorNotes ? `<p><strong>Бележки:</strong> ${article.redactorNotes}</p>` : ''}
+                                        <div class="queue-actions">
+                                            <button onclick="previewArticle('${articleId}')" class="btn-small">👁️ Преглед</button>
+                                            <button onclick="publishArticle('${articleId}')" class="btn-small btn-success">✅ Публикувай</button>
+                                            <button onclick="returnToRedactor('${articleId}')" class="btn-small btn-warning">↩️ Върни на редактор</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            // Remove orphaned entry
+                            await firebase.database().ref(`queues/adminQueue/${articleId}`).remove();
+                        }
+                    }
+                    
+                    if (loadedCount > 0) {
+                        articlesContainer.innerHTML = html;
+                        console.log(`✅ Loaded ${loadedCount} articles from queue`);
+                        return;
+                    }
+                }
+                
+                console.log('📭 Admin queue empty - checking approved articles');
+                
+                // Fallback to approved articles
+                const approvedSnapshot = await firebase.database().ref('articles')
+                    .orderByChild('status')
+                    .equalTo('approved')
+                    .once('value');
+                
+                if (!approvedSnapshot.exists()) {
+                    articlesContainer.innerHTML = 
+                        '<div class="empty-state">Няма статии, чакащи окончателно одобрение.</div>';
+                    return;
+                }
+                
+                let html = '';
+                let count = 0;
+                
+                approvedSnapshot.forEach(child => {
+                    const article = child.val();
+                    const articleId = child.key;
+                    count++;
+                    
+                    html += `
+                        <div class="admin-queue-item" id="queue-item-${articleId}">
+                            <div style="background: #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                                ⚠️ <strong>Статията е одобрена, но не е в опашката!</strong>
+                                <button onclick="addToQueue('${articleId}')" style="margin-left: 10px; padding: 3px 8px; font-size: 12px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                    Добави в опашка
+                                </button>
+                            </div>
+                            <h3>${article.title || 'Без заглавие'}</h3>
+                            <p><strong>Автор:</strong> ${article.author || 'Неизвестен'}</p>
+                            <p><strong>Редактор:</strong> ${article.redactorId || 'Неизвестен'}</p>
+                            <p><strong>Одобрена:</strong> ${new Date(article.approvedAt || article.date).toLocaleDateString('bg-BG')}</p>
+                            ${article.redactorNotes ? `<p><strong>Бележки:</strong> ${article.redactorNotes}</p>` : ''}
+                            <div class="queue-actions">
+                                <button onclick="previewArticle('${articleId}')" class="btn-small">👁️ Преглед</button>
+                                <button onclick="publishArticle('${articleId}')" class="btn-small btn-success">✅ Публикувай</button>
+                                <button onclick="returnToRedactor('${articleId}')" class="btn-small btn-warning">↩️ Върни на редактор</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                articlesContainer.innerHTML = html;
+                console.log(`✅ Loaded ${count} approved articles directly`);
+                
+            } catch (error) {
+                console.error('❌ Error loading articles:', error);
+                document.getElementById('adminQueueContainer').innerHTML = 
+                    '<div class="empty-state">Грешка при зареждане. Моля, опреснете страницата.</div>';
+            }
+        }
+
+        // ========== HELPER FUNCTIONS ==========
+        async function updateUserRole(userId, newRole) {
+            if (!confirm(`Сигурни ли сте, че искате да промените ролята на този потребител на "${newRole}"?`)) {
+                return;
+            }
+            
+            try {
+                await db.ref(`users/${userId}`).update({
+                    role: newRole,
+                    roleUpdatedAt: firebase.database.ServerValue.TIMESTAMP,
+                    roleUpdatedBy: auth.currentUser.uid
+                });
+                
+                alert(`✅ Ролята е променена успешно на "${newRole}"!`);
+                loadUserManagement();
+            } catch (error) {
+                console.error('Error updating user role:', error);
+                alert('❌ Грешка при промяна на ролята: ' + error.message);
+            }
+        }
+
+        async function addToQueue(articleId) {
+            if (!confirm('Добавяне на статията в опашката за одобрение?')) return;
+            
+            try {
+                const articleSnap = await firebase.database().ref(`articles/${articleId}`).once('value');
+                const article = articleSnap.val();
+                
+                if (!article) {
+                    alert('Статията не е намерена!');
+                    return;
+                }
+                
+                await firebase.database().ref(`queues/adminQueue/${articleId}`).set({
+                    articleId: articleId,
+                    redactorId: article.redactorId,
+                    redactorName: article.redactorName,
+                    approvedAt: article.approvedAt || Date.now(),
+                    title: article.title,
+                    author: article.author,
+                    addedToQueue: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                alert('✅ Статията е добавена в опашката за одобрение!');
+                loadArticleQueue();
+            } catch (error) {
+                alert('❌ Грешка: ' + error.message);
+            }
+        }
+
+        async function publishArticle(articleId) {
+            if (!confirm('Сигурни ли сте, че искате да публикувате тази статия?')) return;
+            
+            try {
+                console.log(`🚀 Publishing article: ${articleId}`);
+                
+                const articleSnapshot = await firebase.database().ref(`articles/${articleId}`).once('value');
+                const article = articleSnapshot.val();
+                
+                if (!article) {
+                    alert('❌ Статията не е намерена!');
+                    return;
+                }
+                
+                const updates = {
+                    status: 'published',
+                    publishedAt: firebase.database.ServerValue.TIMESTAMP,
+                    publishedBy: auth.currentUser.uid,
+                    publishedByName: auth.currentUser.displayName || auth.currentUser.email,
+                    isLive: true,
+                    lastUpdated: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                await firebase.database().ref(`articles/${articleId}`).update(updates);
+                
+                await firebase.database().ref(`queues/adminQueue/${articleId}`).remove()
+                    .catch(err => console.log('Queue removal error:', err));
+                
+                if (article.authorId) {
+                    try {
+                        const authorRef = firebase.database().ref(`users/${article.authorId}`);
+                        const authorSnapshot = await authorRef.once('value');
+                        const authorData = authorSnapshot.val() || {};
+                        
+                        await authorRef.update({
+                            articlesPublished: (authorData.articlesPublished || 0) + 1,
+                            lastPublished: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    } catch (authorError) {
+                        console.error('Error updating author count:', authorError);
+                    }
+                }
+                
+                const queueItem = document.getElementById(`queue-item-${articleId}`);
+                if (queueItem) {
+                    queueItem.style.opacity = '0.5';
+                    queueItem.innerHTML = '<div style="padding: 20px; text-align: center; color: green;">✅ Публикувана!</div>';
+                    setTimeout(() => queueItem.remove(), 2000);
+                }
+                
+                alert('✅ Статията е публикувана успешно!');
+                
+                setTimeout(() => {
+                    loadArticleQueue();
+                }, 2500);
+                
+            } catch (error) {
+                console.error('❌ Error publishing article:', error);
+                alert('❌ Грешка при публикуване: ' + error.message);
+            }
+        }
+
+        async function returnToRedactor(articleId) {
+            const reason = prompt('Моля, въведете причина за връщането на статията на редактора:');
+            if (!reason) return;
+            
+            try {
+                await firebase.database().ref(`articles/${articleId}`).update({
+                    status: 'needs_revision',
+                    adminFeedback: reason,
+                    returnedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                await firebase.database().ref(`queues/adminQueue/${articleId}`).remove();
+                
+                alert('✅ Статията е върната на редактора за преработка!');
+                loadArticleQueue();
+                
+            } catch (error) {
+                console.error('Error returning article:', error);
+                alert('❌ Грешка при връщане на статията: ' + error.message);
+            }
+        }
+
+        function previewArticle(articleId) {
+            window.open(`article.html?id=${articleId}`, '_blank');
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('ВНИМАНИЕ: Сигурни ли сте, че искате да изтриете този потребител?\n\nТова действие е необратимо и ще изтрие всички данни за потребителя.')) {
+                return;
+            }
+            
+            try {
+                await firebase.database().ref(`users/${userId}`).remove();
+                
+                alert('✅ Потребителят е изтрит успешно от системата!');
+                loadUserManagement();
+                
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('❌ Грешка при изтриване на потребителя: ' + error.message);
+            }
+        }
+
+        // ========== DEBUG FUNCTIONS ==========
+        async function debugAdminQueue() {
+            console.log('=== ADMIN QUEUE DEBUG ===');
+            
+            try {
+                const queue = await firebase.database().ref('queues/adminQueue').once('value');
+                console.log('📋 Admin queue:', queue.exists() ? Object.keys(queue.val()) : 'EMPTY');
+                
+                const approved = await firebase.database().ref('articles')
+                    .orderByChild('status')
+                    .equalTo('approved')
+                    .once('value');
+                console.log('✅ Approved articles:', approved.exists() ? approved.numChildren() : 0);
+                
+                if (approved.exists()) {
+                    approved.forEach(child => {
+                        console.log(`- ${child.key}: "${child.val().title}"`);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Debug error:', error);
+            }
+        }
+
+        async function fixQueueIssues() {
+            if (!confirm('Това ще синхронизира опашката със статусите. Продължаване?')) return;
+            
+            try {
+                const snapshot = await firebase.database().ref('articles')
+                    .orderByChild('status')
+                    .equalTo('approved')
+                    .once('value');
+                
+                if (!snapshot.exists()) {
+                    alert('Няма одобрени статии!');
+                    return;
+                }
+                
+                let fixed = 0;
+                
+                snapshot.forEach(async child => {
+                    const articleId = child.key;
+                    
+                    const inQueue = await firebase.database().ref(`queues/adminQueue/${articleId}`).once('value');
+                    
+                    if (!inQueue.exists()) {
+                        await firebase.database().ref(`queues/adminQueue/${articleId}`).set({
+                            articleId: articleId,
+                            addedAt: firebase.database.ServerValue.TIMESTAMP,
+                            autoAdded: true
+                        });
+                        fixed++;
+                        console.log(`Added ${articleId} to queue`);
+                    }
+                });
+                
+                alert(`✅ Поправени ${fixed} статии в опашката!`);
+                loadArticleQueue();
+                
+            } catch (error) {
+                alert('❌ Грешка: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

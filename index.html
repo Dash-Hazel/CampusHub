@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusHub</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- АНИМАЦИИ - Добавени CSS стилове -->
+    <style>
+        /* 1. АНИМАЦИИ ЗА ПОЯВЯВАНЕ ПРИ СКРОЛ */
+        .scroll-animate {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .scroll-animate.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Забавяне на появата на отделните карти */
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+        .delay-4 { transition-delay: 0.4s; }
+        
+        /* 2. АНИМАЦИИ ЗА ХОВЕР ВЪРХУ ЕЛЕМЕНТИ */
+        /* Бутон "Присъедини се" */
+        .btn {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: translateY(0);
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+        
+        /* Карти с дейности */
+        .activity-card, .publication-card, .team-member {
+            transition: all 0.4s ease;
+            transform: translateY(0);
+        }
+        
+        .activity-card:hover, .publication-card:hover, .team-member:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Снимки на екипа - ефект при hover */
+        .member-photo {
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+        
+        .team-member:hover .member-photo {
+            transform: scale(1.08);
+        }
+        
+        /* 3. АНИМАЦИЯ ЗА HEADER ПРИ СКРОЛ */
+        header {
+            transition: all 0.4s ease;
+        }
+        
+        header.scrolled {
+            background-color: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: 10px 0;
+        }
+        
+        /* 4. АНИМАЦИЯ ЗА ФОРМА */
+        .contact-form input,
+        .contact-form textarea {
+            transition: all 0.3s ease;
+            transform: translateX(0);
+        }
+        
+        .contact-form input:focus,
+        .contact-form textarea:focus {
+            transform: translateX(5px);
+            box-shadow: 5px 5px 0 rgba(44, 62, 80, 0.1);
+        }
+        
+        /* 5. АНИМАЦИЯ ЗА НАВИГАЦИЯТА */
+        nav ul li {
+            position: relative;
+        }
+        
+        nav ul li a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #3498db;
+            transition: width 0.3s ease;
+        }
+        
+        nav ul li a:hover::after {
+            width: 100%;
+        }
+        
+        /* 6. АНИМАЦИЯ ЗА СНИМКАТА НА ЕКИПА (голямата) */
+        .team img[alt="Нашият екип"] {
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .team img[alt="Нашият екип"]:hover {
+            transform: scale(1.03) rotate(1deg);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+    
+   <!-- Firebase and config first -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script src="form-handler.js"></script>
+    <script src="public-calendar.js"></script>
+    
+    <!-- Load articles-list.js AFTER Firebase -->
+    <script src="articles-list.js" defer></script>
+</head>
+<body>
+    <!-- Header Section с клас за scroll анимация -->
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>CampuHub</h1>
+                <p>Училищен клуб по журналистика</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#home">Начало</a></li>
+                    <li><a href="#about">За нас</a></li>
+                    <li><a href="#activities">Дейности</a></li>
+                    <li><a href="#publications">Публикации</a></li>
+                    <li><a href="#team">Екип</a></li>
+                    <li><a href="#contact">Контакти</a></li>
+                    <li><a href="rubric.html">Предстоящо</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content scroll-animate visible">
+                <h2>Добре дошли в CampusHub!</h2>
+                <p>Място, където младите таланти откриват силата на словото и изкуството на разказването.</p>
+                <a href="#contact" class="btn">Присъедини се</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section с анимационен клас -->
+    <section id="about" class="about">
+        <div class="container">
+            <h2 class="scroll-animate">За клуба</h2>
+            <div class="about-content">
+                <div class="about-text scroll-animate delay-1">
+                    <p>CampusHub е място за ученици, които се интересуват от писане, репортажи, фотография и медии. Ние се стремим да развием уменията за критично мислене, изследователска работа и ефективна комуникация.</p>
+                    <p>Чрез нашите дейности, членовете на клуба научават как да създават качествени журналистически материали, да интервюират и да представят информация по интересен и достъпен начин.</p>
+                </div>
+                <div class="about-image scroll-animate delay-2">
+                    <img src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" alt="Снимка на журналистическа дейност">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Activities Section с анимационни класове за всяка карта -->
+    <section id="activities" class="activities">
+        <div class="container">
+            <h2 class="scroll-animate">Нашите дейности</h2>
+            <div class="activities-grid">
+                <div class="activity-card scroll-animate delay-1">
+                    <h3>Писане на статии</h3>
+                    <p>Учим се да пишем за училищния вестник, уебсайта и социалните мрежи.</p>
+                </div>
+                <div class="activity-card scroll-animate delay-2">
+                    <h3>Фотография</h3>
+                    <p>Запознаване с основите на фотографията за журналистически цели.</p>
+                </div>
+                <div class="activity-card scroll-animate delay-3">
+                    <h3>Интервюта</h3>
+                    <p>Упражняваме техники за провеждане на интервюта с интересни личности.</p>
+                </div>
+                <div class="activity-card scroll-animate delay-4">
+                    <h3>Медийна грамотност</h3>
+                    <p>Анализираме медийно съдържание и учим как да разпознаваме фалшиви новини.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Publications Section -->
+    <section id="publications" class="publications">
+        <div class="container">
+            <h2 class="scroll-animate">Нашите публикации</h2>
+            
+            <div class="search-container scroll-animate delay-1">
+                <input type="text" id="articleSearch" placeholder="Търсене в заглавията на статиите..." class="search-input">
+                <button id="clearSearch" class="clear-search-btn">✕</button>
+            </div>
+            
+            <div id="searchResultsInfo" class="search-results-info scroll-animate delay-1"></div>
+            
+            <!-- Newspaper Controls -->
+            <div id="newspaperControls" class="newspaper-controls scroll-animate delay-2" style="display: none;">
+                <div class="selected-count">
+                    <span id="selectedCount">0</span> статии избрани
+                </div>
+                <button id="createNewspaperBtn" class="btn btn-primary">
+                    🗞️ Създай вестник
+                </button>
+                <button id="clearSelectionBtn" class="btn btn-secondary">
+                    ✕ Изчисти избора
+                </button>
+            </div>
+            
+            <div id="articlesContainer" class="articles-grid">
+                <!-- Articles will load here automatically from Firebase -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Newspaper Modal -->
+    <div id="newspaperModal" class="newspaper-modal">
+        <div class="newspaper-modal-content scroll-animate">
+            <div class="newspaper-modal-header">
+                <h2>🗞️ Вашият цифров вестник</h2>
+                <button id="closeNewspaperBtn" class="close-btn">✕</button>
+            </div>
+            <div class="newspaper-modal-body">
+                <div id="newspaperLoading" class="newspaper-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Създаване на вестника... Може да отнеме няколко секунди.</p>
+                </div>
+                <div id="newspaperContent" class="newspaper-content" style="display: none;"></div>
+            </div>
+            <div class="newspaper-modal-footer">
+                <button id="downloadNewspaperBtn" class="btn btn-primary">📥 Изтегли PDF</button>
+                <button id="shareNewspaperBtn" class="btn btn-secondary">📤 Сподели</button>
+                <button id="printNewspaperBtn" class="btn">🖨️ Принтирай</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Section -->
+<section id="team" class="team">
+    <div class="container">
+        <h2 class="scroll-animate">Нашият екип</h2>
+        
+        <!-- Extra large square with enhanced shadowing -->
+        <div style="display: flex; justify-content: center; margin: 60px 0;" class="scroll-animate">
+            <img src="photos/team-photo.jpg" alt="Нашият екип" 
+                 style="width: 450px; height: 450px; border-radius: 25px; object-fit: cover; border: 6px solid #ffffff; 
+                        box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.1);
+                        filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));">
+        </div>
+
+        <div class="team-grid">
+            <!-- Първи ред (delay-1) -->
+            <div class="team-member scroll-animate delay-1">
+                <div class="member-photo">
+                    <img src="photos/Kameliq-Aleksandrova.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Ръководител</h3>
+                <p>г-жа Камелия Александрова</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-1">
+                <div class="member-photo">
+                    <img src="photos/Georgi-Jerev.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Фотограф</h3>
+                <p>Георги Жерев</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-1">
+                <div class="member-photo"></div>
+                <h3>Фотограф</h3>
+                <p>Ася Тулилова</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-1">
+                <div class="member-photo">
+                    <img src="photos/Yoana-Zlaatinova.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Редактор</h3>
+                <p>Йоана Златинова</p>
+            </div>
+
+            <!-- Втори ред (delay-2) -->
+            <div class="team-member scroll-animate delay-2">
+                <div class="member-photo">
+                    <img src="photos/Rebecca-Mehandjieva.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Репортер</h3>
+                <p>Ребека Механджиева</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-2">
+                <div class="member-photo">
+                    <img src="photos/Deyvis-Gushterov.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Техническа поддръжка</h3>
+                <p>Дейвис Гущеров</p>
+            </div>
+
+            <div class="team-member scroll-animate delay-2">
+                <div class="member-photo">
+                    <img src="photos/Temenujka-Georgieva.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Репортер</h3>
+                <p>Теменужка Златинова</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-2">
+                <div class="member-photo">
+                    <img src="photos/Gergana-Ilieva.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Репортер</h3>
+                <p>Гергана Илиева</p>
+            </div>
+
+            <!-- Трети ред (delay-3) -->
+            <div class="team-member scroll-animate delay-3">
+                <div class="member-photo">
+                    <img src="photos/Anna-Malik.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Репортер</h3>
+                <p>Анна Малик</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-3">
+                <div class="member-photo">
+                    <img src="photos/viber_image_2025-11-19_17-50-47-904.jpg" alt="Ръководител" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <h3>Репортер</h3>
+                <p>Йорданка Митева</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-3">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-3">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+
+            <!-- Четвърти ред (delay-4) -->
+            <div class="team-member scroll-animate delay-4">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-4">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-4">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-4">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+
+            <!-- Пети ред (delay-1 отново, за да се рециклират ефектите) -->
+            <div class="team-member scroll-animate delay-1">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-2">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-3">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+            
+            <div class="team-member scroll-animate delay-4">
+                <div class="member-photo"></div>
+                <h3>Репортер</h3>
+                <p>...</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="scroll-animate">Свържете се с нас</h2>
+            <div class="contact-content">
+                <div class="contact-info scroll-animate delay-1">
+                    <h3>Информация</h3>
+                    <p><strong>Събирания:</strong> Всеки вторник от 15:00 в кабинет 203</p>
+                    <p><strong>Имейл:</strong> mladjournalist@abv.bg</p>
+                    <p><strong>Социални мрежи:</strong></p>
+                    <div class="social-links">
+                        <a href="#">Facebook</a>
+                        <a href="#">Instagram</a>
+                    </div>
+                </div>
+                <div class="contact-form scroll-animate delay-2">
+                    <h3>Стани част от екипа</h3>
+                    <form id="joinForm">
+                        <input type="text" id="name" placeholder="Име" required>
+                        <input type="email" id="email" placeholder="Имейл" required>
+                        <input type="text" id="class" placeholder="Клас" required>
+                        <textarea id="message" placeholder="Защо искаш да се присъединиш?" rows="4" required></textarea>
+                        <button type="submit" class="btn">Изпрати кандидатстване</button>
+                    </form>
+                    <div id="formMessage" class="form-message"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Calendar Section -->
+    <section id="calendar" class="calendar scroll-animate">
+        <div class="container">
+            <h2>Предстоящи събития</h2>
+            <div id="publicEventsList" class="public-events-list">
+                <!-- Events will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Клуб "Млад Журналист". Всички права запазени.</p>
+        </div>
+    </footer>
+
+ 
+    
+    <!-- АНИМАЦИИ - JavaScript код -->
+    <script>
+    // Изчакай да се зареди цялата страница
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. АНИМАЦИЯ ПРИ СКРОЛ - за поява на елементи
+        const scrollElements = document.querySelectorAll('.scroll-animate');
+        
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+
+            scrollElements.forEach(element => observer.observe(element));
+        } else {
+            scrollElements.forEach(element => element.classList.add('visible'));
+        }
+        
+        // 2. АНИМАЦИЯ ЗА HEADER ПРИ СКРОЛ
+        const header = document.querySelector('header');
+        
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+        
+        // 3. АНИМАЦИЯ ЗА НАВИГАЦИОННИ ЛИНКОВЕ
+        const navLinks = document.querySelectorAll('nav ul li a');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            link.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // 4. АНИМАЦИЯ ЗА СНИМКИ В ЕКИПА
+        const teamPhotos = document.querySelectorAll('.member-photo img');
+        
+        teamPhotos.forEach(photo => {
+            photo.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.1) rotate(2deg)';
+                this.style.transition = 'transform 0.5s ease';
+            });
+            
+            photo.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1) rotate(0)';
+            });
+        });
+        
+        // 5. АНИМАЦИЯ ПРИ КЛИК ВЪРХУ БУТОН
+        const buttons = document.querySelectorAll('.btn');
+        
+        buttons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Създаване на ефект на вълна
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.7);
+                    transform: scale(0);
+                    animation: ripple-animation 0.6s linear;
+                    width: ${size}px;
+                    height: ${size}px;
+                    top: ${y}px;
+                    left: ${x}px;
+                    pointer-events: none;
+                `;
+                
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+        
+        // 6. АНИМАЦИЯ ЗА ФОРМА
+        const formInputs = document.querySelectorAll('.contact-form input, .contact-form textarea');
+        
+        formInputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-5px)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // Добавяне на CSS за ripple анимация
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple-animation {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    });
+    
+    // 7. АНИМАЦИЯ ПРИ ЗАРЕЖДАНЕ НА СТРАНИЦАТА
+    window.addEventListener('load', function() {
+        document.body.style.opacity = '0';
+        document.body.style.transition = 'opacity 0.5s ease';
+        
+        setTimeout(() => {
+            document.body.style.opacity = '1';
+        }, 100);
+    });
+    </script>
+    
+    <script>
+    // Debug: Check if articles-list.js loaded
+    console.log('Debug: articles-list.js should have loaded');
+    console.log('Checkbox function exists?', typeof toggleArticleSelection);
+
+    // Force load articles with debug
+    setTimeout(function() {
+        console.log('Checking articles container...');
+        const container = document.getElementById('articlesContainer');
+        console.log('Container:', container);
+        console.log('Container HTML:', container.innerHTML.substring(0, 200));
+        
+        // Look for checkboxes
+        const checkboxes = document.querySelectorAll('.article-select-checkbox');
+        console.log('Found checkboxes:', checkboxes.length);
+        
+        if (checkboxes.length === 0) {
+            console.error('NO CHECKBOXES FOUND!');
+            console.log('Possible issues:');
+            console.log('1. articles-list.js not loaded');
+            console.log('2. displayArticles not called');
+            console.log('3. Checkbox HTML not being added');
+        }
+    }, 2000);
+    </script>
+
+<script>
+// Header scroll effect - компактен
+document.addEventListener('DOMContentLoaded', function() {
+    const header = document.querySelector('header');
+    const body = document.body;
+    
+    // Функция за scroll
+    function handleScroll() {
+        if (window.scrollY > 30) { // По-малък праг (30 вместо 50)
+            header.classList.add('scrolled');
+            body.classList.add('header-scrolled');
+        } else {
+            header.classList.remove('scrolled');
+            body.classList.remove('header-scrolled');
+        }
+    }
+    
+    // Слушател за scroll
+    window.addEventListener('scroll', handleScroll);
+    
+    // Инициализация
+    handleScroll();
+    
+    // Останалата част от кода остава същата...
+    // [mobile menu, smooth scroll, etc.]
+});
+
+// Анимация при зареждане
+window.addEventListener('load', function() {
+    // Вече не се нуждаем от fade-in за цялото body
+    // Header вече е фиксиран и видим от началото
+});
+</script>
+
+<!-- Add authentication system -->
+<script src="auth-system.js"></script>
+
+
+</body>
+</html>
+
+
+
+
